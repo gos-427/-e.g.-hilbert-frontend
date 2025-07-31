@@ -1,92 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hilbert Mesh Frontend</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #222;
-            color: #eee;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #333;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-        }
-        h1, h2 {
-            color: #5cb85c;
-            text-align: center;
-        }
-        .connection-status {
-            text-align: center;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-        #messages {
-            border: 1px solid #555;
-            min-height: 200px;
-            max-height: 400px;
-            overflow-y: scroll;
-            padding: 10px;
-            background-color: #444;
-            margin-bottom: 20px;
-            border-radius: 4px;
-        }
-        .message-input {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .message-input input[type="text"] {
-            flex-grow: 1;
-            padding: 8px;
-            border: 1px solid #555;
-            border-radius: 4px;
-            background-color: #555;
-            color: #eee;
-        }
-        .message-input button {
-            padding: 8px 15px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .message-input button:hover {
-            background-color: #45a049;
-        }
-        .msg-from-gos427 {
-            color: #add8e6; /* Light blue */
-        }
-        .msg-from-gpt {
-            color: #ffb6c1; /* Light pink */
-        }
-        .msg-system {
-            color: #f0e68c; /* Khaki */
-        }
-        .disconnect-btn {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            background-color: #f44336;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            text-align: center;
-        }
-        .disconnect-btn:hover {
-            background-color: #d32f2f;
-        }
-    </style>
-</head>
+    </head>
 <body>
     <div class="container">
         <h1>Hilbert Mesh Frontend</h1>
@@ -108,16 +23,20 @@
         <button class="disconnect-btn" onclick="disconnectSocket()">Disconnect</button>
     </div>
 
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
         // *** IMPORTANT: Your Render backend URL is now inserted below ***
-        // Your backend is deployed at: https://bubble-gum-and-duct-tape.onrender.com
         const BACKEND_URL = 'https://bubble-gum-and-duct-tape.onrender.com'; 
 
         const messagesDiv = document.getElementById('messages');
         const statusSpan = document.getElementById('status');
         let socket;
 
+        // 
+        // *** START MODIFICATION BLOCK FOR PHASE II ***
+        // COMMENT OUT the entire connectSocket, sendMessage, and disconnectSocket functions
+        // and their associated event listeners if you want the frontend to stop attempting connections
+        // and showing status.
+        /*
         function appendMessage(sender, message, type) {
             const msgElement = document.createElement('p');
             msgElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
@@ -209,7 +128,33 @@
         }
 
         // Connect automatically when the page loads
-        document.addEventListener('DOMContentLoaded', connectSocket);
+        // document.addEventListener('DOMContentLoaded', connectSocket); // Comment this out or replace it
+        */
+        // 
+        // *** END MODIFICATION BLOCK FOR PHASE II ***
+        //
+        
+        // This block is what you would REPLACE the above 'DOMContentLoaded' listener with
+        // if you want to explicitly state WebSockets are disabled and disable UI elements.
+        document.addEventListener('DOMContentLoaded', () => {
+            statusSpan.textContent = 'WebSockets Dormant'; // Update status text
+            statusSpan.style.color = 'grey'; // Change color to indicate dormancy
+            
+            // Optionally disable input fields and buttons if WebSockets are dormant
+            document.getElementById('gos427Input').disabled = true;
+            document.getElementById('gptInput').disabled = true;
+            
+            // Access buttons by their onclick attribute or create IDs for them
+            const sendGos427Btn = document.querySelector('button[onclick="sendMessage(\'gos427\')"]');
+            if (sendGos427Btn) sendGos427Btn.disabled = true;
+            
+            const sendGptBtn = document.querySelector('button[onclick="sendMessage(\'gpt\')"]');
+            if (sendGptBtn) sendGptBtn.disabled = true;
+            
+            const disconnectBtn = document.querySelector('.disconnect-btn');
+            if (disconnectBtn) disconnectBtn.disabled = true;
+        });
+
     </script>
 </body>
 </html>
