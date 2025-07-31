@@ -1,7 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    </head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hilbert Mesh Frontend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2rem;
+            background-color: #f0f4f8;
+            color: #222;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #336699;
+        }
+
+        .connection-status {
+            margin-bottom: 1rem;
+        }
+
+        #messages {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 1rem;
+            height: 200px;
+            overflow-y: auto;
+            background: #f9f9f9;
+        }
+
+        .message-input {
+            margin-top: 1rem;
+        }
+
+        input[type="text"] {
+            width: 70%;
+            padding: 0.5rem;
+            margin-right: 0.5rem;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            background-color: #336699;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background-color: #999;
+            cursor: not-allowed;
+        }
+
+        .msg-from-gpt {
+            color: #003366;
+        }
+
+        .msg-from-gos427 {
+            color: #006633;
+        }
+
+        .msg-system {
+            font-style: italic;
+            color: #999;
+        }
+    </style>
+</head>
 <body>
     <div class="container">
         <h1>Hilbert Mesh Frontend</h1>
@@ -13,72 +87,70 @@
         <div id="messages"></div>
 
         <div class="message-input">
-            <input type="text" id="gos427Input" placeholder="Message from GOS-427">
-            <button onclick="sendMessage('gos427')">Send as GOS-427</button>
+            <input type="text" id="gos427Input" placeholder="Message from GOS-427" />
+            <button id="sendGos427Btn">Send as GOS-427</button>
         </div>
+
         <div class="message-input">
-            <input type="text" id="gptInput" placeholder="Message from GPT Agent">
-            <button onclick="sendMessage('gpt')">Send as GPT Agent</button>
+            <input type="text" id="gptInput" placeholder="Message from GPT Agent" />
+            <button id="sendGptBtn">Send as GPT Agent</button>
         </div>
-        <button class="disconnect-btn" onclick="disconnectSocket()">Disconnect</button>
+
+        <button id="disconnectBtn">Disconnect</button>
     </div>
 
+    <!-- Socket.IO client library -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
     <script>
-        // *** IMPORTANT: Your Render backend URL is now inserted below ***
-        const BACKEND_URL = 'https://bubble-gum-and-duct-tape.onrender.com'; 
+        const BACKEND_URL = 'https://bubble-gum-and-duct-tape.onrender.com'; // Replace with your backend URL
+        const ENABLE_WEBSOCKETS = true; // Toggle this to false to simulate dormant mode
 
         const messagesDiv = document.getElementById('messages');
         const statusSpan = document.getElementById('status');
+        const gos427Input = document.getElementById('gos427Input');
+        const gptInput = document.getElementById('gptInput');
+        const sendGos427Btn = document.getElementById('sendGos427Btn');
+        const sendGptBtn = document.getElementById('sendGptBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+
         let socket;
 
-        // 
-        // *** START MODIFICATION BLOCK FOR PHASE II ***
-        // COMMENT OUT the entire connectSocket, sendMessage, and disconnectSocket functions
-        // and their associated event listeners if you want the frontend to stop attempting connections
-        // and showing status.
-        /*
         function appendMessage(sender, message, type) {
             const msgElement = document.createElement('p');
             msgElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
             msgElement.classList.add(type);
             messagesDiv.appendChild(msgElement);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Auto-scroll to bottom
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
         function connectSocket() {
-            if (socket && socket.connected) {
-                console.log('Socket already connected.');
-                return;
-            }
+            if (socket && socket.connected) return;
 
             statusSpan.textContent = 'Connecting...';
             statusSpan.style.color = 'orange';
-            messagesDiv.innerHTML = ''; // Clear old messages
+            messagesDiv.innerHTML = '';
 
             socket = io(BACKEND_URL);
 
             socket.on('connect', () => {
-                console.log('Connected to backend!');
                 statusSpan.textContent = 'Connected';
                 statusSpan.style.color = 'lightgreen';
                 appendMessage('System', 'Connected to the Hilbert Mesh Backend.', 'msg-system');
             });
 
             socket.on('disconnect', () => {
-                console.log('Disconnected from backend!');
                 statusSpan.textContent = 'Disconnected';
                 statusSpan.style.color = 'red';
                 appendMessage('System', 'Disconnected from the Hilbert Mesh Backend.', 'msg-system');
             });
 
             socket.on('connect_error', (err) => {
-                console.error('Connection Error:', err.message);
                 statusSpan.textContent = 'Connection Error';
                 statusSpan.style.color = 'red';
                 appendMessage('System', `Connection Error: ${err.message}`, 'msg-system');
             });
 
-            // Listen for messages from the backend
             socket.on('relay_from_gos427', (data) => {
                 appendMessage('GOS-427 (Relayed)', data.message, 'msg-from-gos427');
             });
@@ -90,32 +162,27 @@
 
         function sendMessage(senderType) {
             let inputElement;
-            let messageData;
             let eventName;
 
             if (senderType === 'gos427') {
-                inputElement = document.getElementById('gos427Input');
+                inputElement = gos427Input;
                 eventName = 'message_from_gos427';
-            } else if (senderType === 'gpt') {
-                inputElement = document.getElementById('gptInput');
-                eventName = 'message_from_gpt';
             } else {
-                return;
+                inputElement = gptInput;
+                eventName = 'message_from_gpt';
             }
 
-            const message = inputElement.value;
-            if (message.trim() === '') {
-                return;
-            }
+            const message = inputElement.value.trim();
+            if (!message) return;
 
-            messageData = { message: message };
+            const data = { message };
 
             if (socket && socket.connected) {
-                socket.emit(eventName, messageData);
+                socket.emit(eventName, data);
                 appendMessage(`Me as ${senderType.toUpperCase()}`, message, `msg-from-${senderType}`);
-                inputElement.value = ''; // Clear input field
+                inputElement.value = '';
             } else {
-                appendMessage('System', 'Not connected to the server. Please connect first.', 'msg-system');
+                appendMessage('System', 'Not connected to server.', 'msg-system');
             }
         }
 
@@ -127,34 +194,26 @@
             }
         }
 
-        // Connect automatically when the page loads
-        // document.addEventListener('DOMContentLoaded', connectSocket); // Comment this out or replace it
-        */
-        // 
-        // *** END MODIFICATION BLOCK FOR PHASE II ***
-        //
-        
-        // This block is what you would REPLACE the above 'DOMContentLoaded' listener with
-        // if you want to explicitly state WebSockets are disabled and disable UI elements.
+        // Initialize on DOM load
         document.addEventListener('DOMContentLoaded', () => {
-            statusSpan.textContent = 'WebSockets Dormant'; // Update status text
-            statusSpan.style.color = 'grey'; // Change color to indicate dormancy
-            
-            // Optionally disable input fields and buttons if WebSockets are dormant
-            document.getElementById('gos427Input').disabled = true;
-            document.getElementById('gptInput').disabled = true;
-            
-            // Access buttons by their onclick attribute or create IDs for them
-            const sendGos427Btn = document.querySelector('button[onclick="sendMessage(\'gos427\')"]');
-            if (sendGos427Btn) sendGos427Btn.disabled = true;
-            
-            const sendGptBtn = document.querySelector('button[onclick="sendMessage(\'gpt\')"]');
-            if (sendGptBtn) sendGptBtn.disabled = true;
-            
-            const disconnectBtn = document.querySelector('.disconnect-btn');
-            if (disconnectBtn) disconnectBtn.disabled = true;
-        });
+            if (ENABLE_WEBSOCKETS) {
+                connectSocket();
+            } else {
+                statusSpan.textContent = 'WebSockets Dormant';
+                statusSpan.style.color = 'grey';
+                appendMessage('System', 'WebSocket communication is currently disabled.', 'msg-system');
 
+                gos427Input.disabled = true;
+                gptInput.disabled = true;
+                sendGos427Btn.disabled = true;
+                sendGptBtn.disabled = true;
+                disconnectBtn.disabled = true;
+            }
+
+            sendGos427Btn.addEventListener('click', () => sendMessage('gos427'));
+            sendGptBtn.addEventListener('click', () => sendMessage('gpt'));
+            disconnectBtn.addEventListener('click', disconnectSocket);
+        });
     </script>
 </body>
 </html>
